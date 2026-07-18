@@ -1,0 +1,27 @@
+.cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  border-right: 1px solid var(--ng-cell-border);
+  border-bottom: 1px solid var(--ng-cell-border);
+  background: var(--ng-surface-cell);
+  color: var(--ng-cell-mark-color);
+  font-weight: 700;
+}
+
+.filled {
+  background: var(--ng-cell-filled);
+}
+
+.wrong {
+  background: var(--ng-cell-wrong);
+}
+
+.thickRight {
+  border-right: 2.5px solid var(--ng-cell-border-5);
+}
+
+.thickBottom {
+  border-bottom: 2.5px solid var(--ng-cell-border-5);
+}

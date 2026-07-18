@@ -1,8 +1,8 @@
 # Progress Tracker — Nonogram Web Client
 
-## Current stage: Stage 1 — API Client & Data Fetching Hooks
+## Current stage: Stage 2 — Static Board Rendering
 ## Status: Complete
-## Active branch: feature/stage-1-api-client (pending PR merge)
+## Active branch: feature/stage-2-static-board (pending PR merge)
 ## Last updated: 2026-07-19
 
 ### Completed stages ✅
@@ -15,9 +15,20 @@
     `setupServer`/`server.listen()` with `onUnhandledRequest: 'error'`
   - 9 tests covering success, 422 validation error, 500 server error, and network error for both
     hooks
+- [x] Stage 2 — Static Board Rendering
+  - `cellState.ts` (`CellState` 0/1/2 + `createEmptyGrid`), `lineRuns.ts` (pure run-length +
+    clue-satisfied helpers, unit tested — also earmarked for reuse by Stage 4's manual edit mode)
+  - `Cell.tsx`, `ClueList.tsx` (one reusable clue-strip component for both row/column
+    orientation), `Board.tsx` (composes header + per-row clue-strip+cells, CSS Modules, mirrors
+    the design's own flexbox structure exactly rather than switching to CSS Grid layout)
+  - 18 tests: 11 unit (`lineRuns`), 7 component (`Board` at 5×5/10×10/15×15, empty puzzle, fully-
+    filled puzzle, clue-text-matches-arrays, satisfied-clue styling)
+  - Visual fidelity check performed via a local Playwright screenshot against a temporary demo
+    puzzle mounted in `App.tsx` (replaced by real data in Stage 4) — caught and fixed a real bug:
+    the board must force `direction: ltr` on itself (design's own `<main dir="ltr">`), otherwise
+    the app shell's RTL inherits into the board and mirrors the clue-strip to the wrong side
 
 ### Future stages ⏳
-- [ ] Stage 2 — Static Board Rendering
 - [ ] Stage 3 — Interactive Board (click/drag, mark-empty, undo/redo)
 - [ ] Stage 4 — Game Flow (setup form → generate → play → check solution)
 - [ ] Stage 5 — UX Polish (timer, persistence, mobile/touch, responsive layout)
@@ -82,6 +93,29 @@
   (all are polish on top of an already-working game loop, and records/history reuses Stage 5's own
   localStorage persistence work). See `NONOGRAM_WEB_SKILL.md` Stages 4 and 5 for the updated
   "What to build" lists.
+- **Board layout mirrors the design's own flexbox structure exactly, not CSS Grid** — the skill's
+  Section 0 rationale mentions "DOM/CSS Grid" contrasted with Canvas/SVG; read that as "a DOM-
+  based grid of elements" (ruling out canvas), not a mandate for the literal CSS `grid` layout
+  module, since the source design itself uses nested `display:flex` throughout with zero
+  `display:grid`. Mirroring its actual DOM shape 1:1 makes visual-fidelity checks trivially
+  correct instead of re-deriving alignment behavior from scratch with a different layout
+  primitive.
+- **`ClueList.tsx` renders a single clue-strip and takes an `orientation` prop**, reused for both
+  each column header and each row's leading clue cell, rather than one component per axis. Matches
+  the skill's naming while still letting `Board.tsx` interleave a row's clue-strip and its cells in
+  one flex row (needed so they share a height via flexbox) — a single "handles the whole axis"
+  component couldn't do that interleaving.
+- **Cell size is a fixed, overridable default (32px) for now — no viewport/zoom-fit sizing yet.**
+  The skill's "sized dynamically" (Stage 2) read as "grid dimensions follow the puzzle's row/col
+  count" (obviously true), not "computed to fit the viewport in JS" — that formula is explicitly
+  Stage 5's concern ("zoom controls... adjust board cell size within the fitted viewport size
+  computed for the current grid"), which doesn't exist as a real layout to fit against until
+  Stage 4's `GameScreen` exists anyway. Building the fit-to-viewport math now against a layout
+  that doesn't exist yet would be guessing at Stage 4/5's actual container shape.
+- **`App.tsx` currently mounts a hardcoded demo puzzle** (a diamond pattern, clues computed via
+  `lineRuns.ts`) purely so Stage 2's required design-fidelity comparison had something real to
+  screenshot. Explicitly temporary — Stage 4's `GameScreen` replaces this with real
+  generate/play data.
 
 ### Design import (Stage 0 step 4) — completed 2026-07-19
 
