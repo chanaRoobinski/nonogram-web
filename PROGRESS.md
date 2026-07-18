@@ -1,8 +1,8 @@
 # Progress Tracker — Nonogram Web Client
 
-## Current stage: Stage 2 — Static Board Rendering
+## Current stage: Stage 3 — Interactive Board
 ## Status: Complete
-## Active branch: feature/stage-2-static-board (pending PR merge)
+## Active branch: feature/stage-3-interactive-board (pending PR merge)
 ## Last updated: 2026-07-19
 
 ### Completed stages ✅
@@ -27,9 +27,30 @@
     puzzle mounted in `App.tsx` (replaced by real data in Stage 4) — caught and fixed a real bug:
     the board must force `direction: ltr` on itself (design's own `<main dir="ltr">`), otherwise
     the app shell's RTL inherits into the board and mirrors the clue-strip to the wrong side
+- [x] Stage 3 — Interactive Board
+  - `cellState.ts` extended with `nextCellState` (the 0→1→2→0 cycle) and a pure reducer
+    (`boardReducer`/`createInitialBoardState`) with `PAINT_START`/`PAINT_CONTINUE`/`UNDO`/`REDO` —
+    a whole drag gesture is one `PAINT_START` + N `PAINT_CONTINUE`s but only ONE history entry, so
+    undo/redo operate on discrete user actions, never per-cell
+  - `boardInteractions.ts`: `computeArrowTarget` (pure, unit tested) + `useBoardState` (the
+    React hook wiring the reducer to mouse drag-to-paint and right-click mark-empty; owns no DOM
+    access itself)
+  - `Cell.tsx` is now a real `<button>` (native keyboard activation/focus, `aria-label`,
+    `focus-visible` outline), with roving `tabIndex` (one active cell at a time) managed by
+    `Board.tsx`
+  - `Board.tsx` is now a controlled component: it no longer owns interactive state itself — the
+    parent calls `useBoardState` and passes `grid` + the three mouse callbacks down, so
+    Stage 4's `GameScreen` can wire its own undo/redo buttons and read the current grid for
+    "check solution" without `Board` hiding that state
+  - 21 new tests: 11 reducer unit tests (every transition, undo/redo, a drag producing exactly
+    one history entry), 4 `computeArrowTarget` unit tests, 6 new Board interaction component
+    tests (click, drag-paint + undo-reverts-the-whole-run, right-click, Enter-key activation,
+    ArrowRight focus movement, disabled-button states) — full suite now 48 tests
+  - Manually verified against the real design behavior via a local Playwright script driving
+    click/drag/right-click/keyboard/undo in the running dev app — all matched expectations,
+    including the right-click "✕" mark matching the design exactly
 
 ### Future stages ⏳
-- [ ] Stage 3 — Interactive Board (click/drag, mark-empty, undo/redo)
 - [ ] Stage 4 — Game Flow (setup form → generate → play → check solution)
 - [ ] Stage 5 — UX Polish (timer, persistence, mobile/touch, responsive layout)
 - [ ] Stage 6 — Accessibility & E2E Coverage
@@ -115,7 +136,36 @@
 - **`App.tsx` currently mounts a hardcoded demo puzzle** (a diamond pattern, clues computed via
   `lineRuns.ts`) purely so Stage 2's required design-fidelity comparison had something real to
   screenshot. Explicitly temporary — Stage 4's `GameScreen` replaces this with real
-  generate/play data.
+  generate/play data. Now also exercises Stage 3's interactions (temporary undo/redo buttons)
+  for the same reason — Stage 4 replaces these too with the real sidebar controls.
+- **Interaction model reconciles the skill's original Stage 3 spec with the (simpler) imported
+  design.** The design's own prototype only implements a single click cycling all 3 states —
+  no drag-to-paint, no right-click at all. The skill's Stage 3 (written before the design existed)
+  explicitly calls for click-to-toggle, drag-to-paint a run, *and* a distinct right-click/mode-
+  toggle gesture for marking empty, plus keyboard input as a baseline (not deferred to Stage 6).
+  Implemented the richer skill-specified model as a strict superset of the design's behavior, not
+  a replacement: a plain click (mousedown+mouseup, no drag) reduces to exactly the design's own
+  single-cell cycle, so it's still faithful to the design for that case; drag extends it to paint a
+  run toward whatever state the *first* cell's click would have produced (standard nonogram
+  drag-paint UX); right-click is an additive shortcut straight to `MARKED_EMPTY` that the design's
+  own single-mockup-file simply never had reason to depict, not something it forbids. Not treated
+  as a blocking ambiguity needing separate sign-off, since it's implementing the skill's own
+  explicit, unambiguous instruction in a way that doesn't contradict anything the design actually
+  shows.
+- **Touch input and a "dedicated mode toggle" for marking empty on touch (skill's alternative to
+  right-click) are intentionally NOT built in Stage 3** — the skill itself assigns "drag-to-paint
+  must work with touch events, not only mouse events" to Stage 5 ("Responsive/touch-friendly
+  layout for mobile"), so Stage 3 covers mouse + keyboard only, per that existing stage boundary.
+- **Board becomes a controlled component in Stage 3**: it no longer calls `useBoardState` itself
+  (that would hide the grid/undo/redo from anything outside `Board`). The parent calls the hook
+  and passes `grid` + mouse callbacks down as props — necessary because the design puts undo/redo
+  buttons in the *sidebar*, outside the board card entirely, and Stage 4's "check solution" needs
+  read access to the current grid too.
+- **Roving `tabIndex` (one focusable cell at a time, moved via arrow keys) implemented now in
+  Stage 3**, not deferred to Stage 6's "verified focus order" — without it, a 15×15 board would put
+  225 stops in the page's Tab order, which is a real usability problem, not just a nicety.
+  Stage 6 still owns the full ARIA/screen-reader pass and automated `axe-core` checks; this is
+  just the baseline keyboard-operability the skill's Stage 3 explicitly asked for.
 
 ### Design import (Stage 0 step 4) — completed 2026-07-19
 
