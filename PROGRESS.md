@@ -1,16 +1,22 @@
 # Progress Tracker — Nonogram Web Client
 
-## Current stage: Stage 0 — Project Scaffolding, CI & Generated API Types
+## Current stage: Stage 1 — API Client & Data Fetching Hooks
 ## Status: Complete
-## Active branch: main
+## Active branch: feature/stage-1-api-client (pending PR merge)
 ## Last updated: 2026-07-19
 
 ### Completed stages ✅
 - [x] Stage 0 — Project Scaffolding, CI & Generated API Types (pushed directly to `main`, per
   Stage 0's one-time exception)
+- [x] Stage 1 — API Client & Data Fetching Hooks
+  - `useGeneratePuzzle` / `useSolvePuzzle`: thin `useMutation` wrappers over `postJson`
+  - `QueryClientProvider` wired in `main.tsx`
+  - MSW (`src/mocks/`) mocks both endpoints for tests; wired into `tests/setup.ts` via
+    `setupServer`/`server.listen()` with `onUnhandledRequest: 'error'`
+  - 9 tests covering success, 422 validation error, 500 server error, and network error for both
+    hooks
 
 ### Future stages ⏳
-- [ ] Stage 1 — API Client & Data Fetching Hooks
 - [ ] Stage 2 — Static Board Rendering
 - [ ] Stage 3 — Interactive Board (click/drag, mark-empty, undo/redo)
 - [ ] Stage 4 — Game Flow (setup form → generate → play → check solution)
@@ -90,6 +96,16 @@ it had to be fetched directly by ID). File: `נונוגרמה.dc.html`. Full ext
   hint/check click, and caches the result client-side for the rest of that puzzle's session. No
   `nonogram-app` changes. Revisit only if real-world latency on large/very-hard grids proves this
   a problem in practice.
+- **"Consistent loading/error/success shape" (Stage 1) is satisfied by using TanStack Query's
+  `useMutation` directly for both hooks**, rather than a hand-rolled wrapper around it — `mutate`/
+  `data`/`error`/`isPending`/`isError`/`isSuccess` are already uniform across both hooks by
+  construction. No extra abstraction layer added on top.
+- **MSW is wired for tests only** (`src/mocks/` + `msw/node`'s `setupServer`, via `tests/setup.ts`)
+  — not set up as a browser-level dev-mode mock (no `npx msw init` / service worker file in
+  `public/`). The skill's "mock/dev mode... so component tests and early UI work don't require a
+  live backend" is satisfied for tests; a browser dev-mock can be added later if working against a
+  live local backend becomes inconvenient, but wasn't needed yet since the backend already runs
+  locally and CORS is fixed.
 
 ### Blockers / decisions needed
 
