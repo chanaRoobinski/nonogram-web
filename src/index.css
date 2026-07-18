@@ -1,0 +1,70 @@
+@import url('https://fonts.googleapis.com/css2?family=Suez+One&display=swap');
+
+:root {
+  /* Background */
+  --ng-bg: oklch(0.95 0.02 75);
+  --ng-bg-dot: oklch(0.9 0.02 75);
+  --ng-surface: oklch(0.97 0.015 75);
+  --ng-surface-raised: oklch(0.99 0.01 75);
+  --ng-surface-cell: oklch(0.99 0.005 75);
+
+  /* Ink / text */
+  --ng-ink: oklch(0.28 0.03 50);
+  --ng-ink-muted: oklch(0.5 0.03 50);
+  --ng-title: #68150c;
+  --ng-title-shadow: oklch(0.85 0.08 60);
+
+  /* Borders */
+  --ng-border: oklch(0.85 0.02 60);
+  --ng-border-strong: oklch(0.3 0.03 50);
+  --ng-cell-border: oklch(0.82 0.02 60);
+  --ng-cell-border-5: oklch(0.3 0.03 50);
+
+  /* Cell states */
+  --ng-cell-filled: oklch(0.3 0.03 50);
+  --ng-cell-wrong: oklch(0.6 0.18 30);
+  --ng-cell-mark-color: oklch(0.55 0.16 30);
+
+  /* Clue text */
+  --ng-clue-unmet: oklch(0.3 0.03 50);
+  --ng-clue-met: oklch(0.65 0.03 60);
+
+  /* Buttons */
+  --ng-btn-primary: oklch(0.45 0.03 50);
+  --ng-btn-primary-hover: oklch(0.35 0.03 50);
+  --ng-btn-neutral: oklch(0.35 0.03 50);
+  --ng-btn-neutral-hover: oklch(0.28 0.03 50);
+  --ng-btn-danger: #c75252;
+  --ng-btn-danger-hover: oklch(0.48 0.17 30);
+  --ng-btn-accent: #d17169;
+  --ng-btn-accent-hover: oklch(0.52 0.17 45);
+  --ng-btn-success: oklch(0.5 0.14 145);
+  --ng-btn-success-hover: oklch(0.44 0.15 145);
+
+  /* Feedback */
+  --ng-record-gold: oklch(0.55 0.16 45);
+  --ng-modal-overlay: rgba(40, 30, 20, 0.55);
+
+  --ng-font-body: Georgia, 'Times New Roman', serif;
+  --ng-font-display: 'Suez One', Georgia, serif;
+
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--ng-bg);
+  background-image: radial-gradient(var(--ng-bg-dot) 1px, transparent 1px);
+  background-size: 14px 14px;
+  color: var(--ng-ink);
+  font-family: var(--ng-font-body);
+}
+
+#root {
+  min-height: 100vh;
+}

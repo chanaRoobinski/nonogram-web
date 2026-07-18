@@ -1,0 +1,348 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Nonogram API",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/puzzles/generate": {
+      "post": {
+        "tags": [
+          "puzzles"
+        ],
+        "summary": "Generate",
+        "description": "Generate a puzzle at the requested size/difficulty.\n\nAlways uses a RandomPatternSource (optionally seeded, for reproducible\nresults) — there's no way to submit a hand-built ManualPatternSource\npattern over HTTP, since that's a testing/internal-tooling concern, not\nsomething an API client would supply.\n\nReturns HTTP 422 if generate_puzzle() couldn't find any valid puzzle at\nall within max_attempts (GenerationTimeoutError). Note this is\ndifferent from \"didn't hit the exact requested difficulty\" — that case\nstill returns 200, with exact_match=False in the response.",
+        "operationId": "generate_puzzles_generate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/puzzles/solve": {
+      "post": {
+        "tags": [
+          "puzzles"
+        ],
+        "summary": "Solve Puzzle",
+        "description": "Solve the given row/column clues from a blank grid.\n\nReturns HTTP 422 if any clue's run values are invalid (e.g. negative —\nInvalidClueError). Otherwise always returns 200, with `status`\nreflecting whatever solver.engine.solve() reported (SOLVED,\nCONTRADICTION, or MAX_DEPTH_EXCEEDED) — a puzzle with no solution is a\nnormal, expected outcome for this endpoint, not a client error.",
+        "operationId": "solve_puzzle_puzzles_solve_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SolveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SolveResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "DifficultyInfo": {
+        "properties": {
+          "score": {
+            "type": "integer",
+            "title": "Score"
+          },
+          "category": {
+            "$ref": "#/components/schemas/DifficultyLevel"
+          },
+          "suitable_for_human": {
+            "type": "boolean",
+            "title": "Suitable For Human"
+          }
+        },
+        "type": "object",
+        "required": [
+          "score",
+          "category",
+          "suitable_for_human"
+        ],
+        "title": "DifficultyInfo",
+        "description": "The difficulty portion of a GenerateResponse — mirrors\ndifficulty.evaluator.DifficultyResult."
+      },
+      "DifficultyLevel": {
+        "type": "string",
+        "enum": [
+          "EASY",
+          "MEDIUM",
+          "HARD",
+          "VERY_HARD"
+        ],
+        "title": "DifficultyLevel",
+        "description": "The JSON-friendly mirror of difficulty.evaluator.DifficultyCategory\n— a plain string enum so it serializes cleanly to/from JSON. Values are\nnamed identically to DifficultyCategory's members so converting between\nthe two is just a name lookup (see the routers)."
+      },
+      "GenerateRequest": {
+        "properties": {
+          "num_rows": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Num Rows"
+          },
+          "num_cols": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Num Cols"
+          },
+          "difficulty": {
+            "$ref": "#/components/schemas/DifficultyLevel"
+          },
+          "max_attempts": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Max Attempts"
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "num_rows",
+          "num_cols",
+          "difficulty",
+          "max_attempts"
+        ],
+        "title": "GenerateRequest",
+        "description": "Body of POST /puzzles/generate."
+      },
+      "GenerateResponse": {
+        "properties": {
+          "row_clues": {
+            "items": {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Row Clues"
+          },
+          "col_clues": {
+            "items": {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Col Clues"
+          },
+          "difficulty": {
+            "$ref": "#/components/schemas/DifficultyInfo"
+          },
+          "exact_match": {
+            "type": "boolean",
+            "title": "Exact Match"
+          }
+        },
+        "type": "object",
+        "required": [
+          "row_clues",
+          "col_clues",
+          "difficulty",
+          "exact_match"
+        ],
+        "title": "GenerateResponse",
+        "description": "Deliberately excludes the solution grid: the frontend renders the\npuzzle from the clues alone and validates a player's attempt via\nPOST /puzzles/solve, rather than receiving the answer up front."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "SolveOutcome": {
+        "type": "string",
+        "enum": [
+          "SOLVED",
+          "CONTRADICTION",
+          "MAX_DEPTH_EXCEEDED"
+        ],
+        "title": "SolveOutcome",
+        "description": "The JSON-friendly mirror of solver.engine.SolveStatus."
+      },
+      "SolveRequest": {
+        "properties": {
+          "row_clues": {
+            "items": {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Row Clues"
+          },
+          "col_clues": {
+            "items": {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Col Clues"
+          },
+          "max_backtrack_depth": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Backtrack Depth"
+          }
+        },
+        "type": "object",
+        "required": [
+          "row_clues",
+          "col_clues"
+        ],
+        "title": "SolveRequest",
+        "description": "Body of POST /puzzles/solve. row_clues/col_clues are plain lists of\nrun-length lists (e.g. [[3, 1], [2]]) — the JSON equivalent of a list of\ncore.grid.Clue objects."
+      },
+      "SolveResponse": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/SolveOutcome"
+          },
+          "solution": {
+            "anyOf": [
+              {
+                "items": {
+                  "items": {
+                    "type": "boolean"
+                  },
+                  "type": "array"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Solution"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "SolveResponse",
+        "description": "Response of POST /puzzles/solve."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}
