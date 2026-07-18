@@ -1,0 +1,19 @@
+.card {
+  /* The design deliberately keeps the board itself LTR even though the app shell is RTL, so
+     clue/cell ordering doesn't mirror. */
+  direction: ltr;
+  display: inline-flex;
+  flex-direction: column;
+  background: var(--ng-surface-raised);
+  border: 2px solid var(--ng-border-strong);
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow:
+    0 4px 0 var(--ng-border),
+    0 6px 14px rgba(0, 0, 0, 0.08);
+}
+
+.headerRow,
+.row {
+  display: flex;
+}
