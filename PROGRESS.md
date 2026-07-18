@@ -85,22 +85,12 @@ the design-system MCP tool (`get_project`/`get_file`, not `list_projects` — th
 it had to be fetched directly by ID). File: `נונוגרמה.dc.html`. Full extracted token summary in
 `docs/design-tokens.md`.
 
+- **Hint/check solution acquisition: Option A, no backend change** (project owner, 2026-07-19).
+  Client calls `POST /puzzles/solve` with the puzzle's own clues once per puzzle, on the first
+  hint/check click, and caches the result client-side for the rest of that puzzle's session. No
+  `nonogram-app` changes. Revisit only if real-world latency on large/very-hard grids proves this
+  a problem in practice.
+
 ### Blockers / decisions needed
 
-- **Backend efficiency question for hint/check (raised to project owner 2026-07-19, awaiting
-  answer):** both "hint" and "check solution" need the actual solution, obtainable by calling
-  `POST /puzzles/solve` with the puzzle's own clues (lazily, cached client-side — see resolved
-  decision below). This re-runs the same constraint solve the generator already ran once
-  internally (and discarded). Two options, not yet chosen:
-  - **A — no backend change**: client just calls `/puzzles/solve` once per puzzle, on first
-    hint/check click. Simple, uses the API exactly as designed ("existing for future use by the
-    frontend to validate a user's solution"), one extra HTTP round-trip of roughly the same cost
-    as the original generate call. Recommended default unless real-world latency on large/
-    very-hard grids proves it a problem.
-  - **B — backend change**: `nonogram-app` persists the solution behind a `puzzle_id` returned
-    from `/generate`, and adds a way to fetch it in O(1) without re-solving. Avoids duplicate
-    solver work, but requires adding a persistence layer (currently the backend is stateless) and
-    reopens the exact anti-cheat question the backend deliberately avoided by withholding the
-    solution from `/generate` in the first place.
-  - Not blocking Stage 1–3 (no UI needs this yet) — must be resolved before implementing hint/
-    check in Stage 4.
+- (none currently open)
