@@ -64,6 +64,19 @@
   (`app.openapi()`), not by starting `uvicorn` — no server/network involved, so nothing to keep in
   sync beyond re-running the export when the backend schema changes.
 
+- **Solution checking is on-demand only, never live** (project owner, 2026-07-19): "check
+  solution" and "hint" are both explicit user-triggered actions (matches the design's ✓ בדיקה /
+  רמז buttons) — the client never diffs the player's grid against the solution while they play.
+  Closes Stage 4's own required decision point.
+- **All design-surfaced features beyond the original 8 stages are now in scope** (project owner,
+  2026-07-19): hint, manual "create your own puzzle" edit mode, print, records/history
+  (localStorage), and zoom controls are all approved for this project, not deferred/cut. Folded
+  into the existing stage plan rather than added as new stages — hint + manual edit mode into
+  Stage 4 (both are core gameplay/setup concerns), records/history + zoom + print into Stage 5
+  (all are polish on top of an already-working game loop, and records/history reuses Stage 5's own
+  localStorage persistence work). See `NONOGRAM_WEB_SKILL.md` Stages 4 and 5 for the updated
+  "What to build" lists.
+
 ### Design import (Stage 0 step 4) — completed 2026-07-19
 
 Claude Design project "אפליקציית נונוגרמה" (`e034e5c7-7502-4400-be8a-cdb77ab83b28`) imported via
@@ -74,18 +87,20 @@ it had to be fetched directly by ID). File: `נונוגרמה.dc.html`. Full ext
 
 ### Blockers / decisions needed
 
-- **Design shows a feature surface beyond the current 8-stage plan** — a hint action, a manual
-  "create your own puzzle" edit mode, a print button, a records/history modal (best times +
-  recent games, `localStorage`-backed), and button-based zoom controls. None of these appear in
-  Stages 1–7 as currently written. **Not yet decided**: are these in scope for this project (as
-  new stages, e.g. inserted after Stage 5), or explicitly out of scope for the MVP (like the
-  image-upload screen already is)? Do not build any of them until the project owner decides — see
-  `docs/design-tokens.md` → "Feature surface shown in the design..." for the full list.
-- **Live vs. on-demand solution checking (Stage 4's own required decision) is informed but not yet
-  made.** The design's hint/instant-wrong-flash features assume the client already knows the full
-  solution (the prototype generates puzzles in-browser, so `this.state.solution` is always
-  available). Our real `POST /puzzles/generate` deliberately withholds the solution. The clues
-  returned are sufficient to also call `POST /puzzles/solve` once to obtain the actual solution
-  for hint/instant-feedback use — no backend change needed — but *when* to make that call (eagerly
-  after generate vs. lazily on first hint/check) still needs an explicit decision at Stage 4, per
-  the skill's own rule. See `docs/design-tokens.md` → "Architectural note...".
+- **Backend efficiency question for hint/check (raised to project owner 2026-07-19, awaiting
+  answer):** both "hint" and "check solution" need the actual solution, obtainable by calling
+  `POST /puzzles/solve` with the puzzle's own clues (lazily, cached client-side — see resolved
+  decision below). This re-runs the same constraint solve the generator already ran once
+  internally (and discarded). Two options, not yet chosen:
+  - **A — no backend change**: client just calls `/puzzles/solve` once per puzzle, on first
+    hint/check click. Simple, uses the API exactly as designed ("existing for future use by the
+    frontend to validate a user's solution"), one extra HTTP round-trip of roughly the same cost
+    as the original generate call. Recommended default unless real-world latency on large/
+    very-hard grids proves it a problem.
+  - **B — backend change**: `nonogram-app` persists the solution behind a `puzzle_id` returned
+    from `/generate`, and adds a way to fetch it in O(1) without re-solving. Avoids duplicate
+    solver work, but requires adding a persistence layer (currently the backend is stateless) and
+    reopens the exact anti-cheat question the backend deliberately avoided by withholding the
+    solution from `/generate` in the first place.
+  - Not blocking Stage 1–3 (no UI needs this yet) — must be resolved before implementing hint/
+    check in Stage 4.

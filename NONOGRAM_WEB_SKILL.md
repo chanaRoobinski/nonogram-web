@@ -361,9 +361,21 @@ Connect setup → generation → play → solution-checking into one coherent sc
 - `PuzzleSetupForm.tsx`: size + difficulty selection, calls `useGeneratePuzzle`.
 - `GameScreen.tsx`: orchestrates the fetched puzzle, the `Board`, a timer, and a "check solution"
   action.
-- **Decide explicitly** (record in `PROGRESS.md`, do not guess): is correctness checked live as
-  the user plays, only on an explicit "check" action, or both? This changes both UX and how much
-  logic needs to live client-side vs. round-tripping to `/puzzles/solve`.
+- **Resolved (2026-07-19, project owner):** correctness is checked **only on explicit user
+  action** — a "check solution" button and a separate "hint" button (see design's ✓ בדיקה / רמז
+  buttons) — never live/continuously while the user plays. No live-diffing logic needed.
+- **Solution acquisition for hint/check:** both actions need the actual solution, which
+  `POST /puzzles/generate` deliberately withholds. Lazily call `POST /puzzles/solve` with the
+  puzzle's own row/col clues the **first time the user clicks either "hint" or "check"** (not
+  eagerly on generate), cache the result client-side for the rest of that puzzle's session, and
+  reuse it for subsequent hint/check clicks without re-fetching. See `docs/design-tokens.md` for
+  why this needs no backend change (open efficiency question tracked in `PROGRESS.md` — resolve
+  before or during this stage, not after).
+- **Manual puzzle creation ("create your own"/עריכה):** an alternate path into the same
+  `GameScreen`, alongside "generate": the user paints a solution grid directly (no backend call),
+  the client derives row/col clues from that grid with the same run-length logic the solver
+  itself uses conceptually, and play proceeds identically to a generated puzzle from that point
+  on. Entirely client-side — no backend involvement.
 - Clear handling of the generator's "closest match / didn't hit exact difficulty" flag from the
   backend (Stage 6 of the backend skill) — the UI must surface this to the user, not hide it.
 - **Screen composition follows the imported design (Section 0.1):** the setup form, controls, and
@@ -372,15 +384,19 @@ Connect setup → generation → play → solution-checking into one coherent sc
   language and record each such extension in `PROGRESS.md` — do not invent a new visual direction.
 
 ### Tests
-- **Component**: setup form validation, loading/error states while generating.
-- **E2E (first Playwright suite)**: request a puzzle, make some moves, undo, complete it, verify
-  the success state appears.
+- **Component**: setup form validation, loading/error states while generating; manual edit mode
+  (draw → derive clues → play).
+- **Unit**: the run-length clue-derivation helper used by manual edit mode.
+- **E2E (first Playwright suite)**: request a puzzle, make some moves, undo, use hint, check
+  solution, complete it, verify the success state appears.
 
 ### Git
 - Branch: `feature/stage-4-game-flow`
 
 ### Definition of Done
 - [ ] Full generate → play → complete flow covered by an E2E test
+- [ ] Hint and check-solution both work via a single lazily-fetched, cached solution
+- [ ] Manual puzzle creation flow covered by a component test
 - [ ] Difficulty-mismatch flag from backend is visibly surfaced in the UI
 - [ ] **Full-screen visual comparison against the imported design performed**; deviations approved
       and recorded in `PROGRESS.md`
@@ -397,12 +413,23 @@ Make the app pleasant and usable beyond the happy path.
 - Timer display and (if decided) pause/resume.
 - Progress persistence across page reloads using real browser `localStorage` (this is a real
   browser app, not an Artifact — real storage APIs are appropriate here).
+- **Records & history** (design's שיאים והיסטוריה modal): best completion time per
+  size+difficulty combination, and a recent-games list (time + mistake count), both
+  `localStorage`-backed — the same persistence mechanism as progress-saving above, just a second
+  key/shape. Entirely client-side, no backend involvement.
+- **Zoom controls** (design's +/− buttons near the board): adjust board cell size within the
+  fitted viewport size computed for the current grid, not a separate independent zoom — matches
+  the design's own `zoom` multiplier approach.
+- **Print** (design's הדפסה button): `window.print()` plus a print stylesheet that hides
+  chrome/controls and shows just the board + clues, per the print rules already sketched in the
+  imported design's `<style>` block.
 - Responsive/touch-friendly layout for mobile (drag-to-paint must work with touch events, not only
   mouse events).
 - Visual feedback for a completed row/column.
 
 ### Tests
-- **Component**: persistence round-trip (save → reload → state restored).
+- **Component**: persistence round-trip (save → reload → state restored); records/history
+  read-modify-write round-trip; zoom bounds (min/max clamping).
 - **E2E**: a touch-simulated drag-paint interaction on a mobile viewport.
 
 ### Git
