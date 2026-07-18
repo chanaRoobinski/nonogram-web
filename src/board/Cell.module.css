@@ -3,11 +3,24 @@
   align-items: center;
   justify-content: center;
   user-select: none;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  border: none;
   border-right: 1px solid var(--ng-cell-border);
   border-bottom: 1px solid var(--ng-cell-border);
+  border-radius: 0;
   background: var(--ng-surface-cell);
   color: var(--ng-cell-mark-color);
+  font: inherit;
   font-weight: 700;
+}
+
+.cell:focus-visible {
+  outline: 2px solid var(--ng-clue-met);
+  outline-offset: -2px;
+  z-index: 1;
+  position: relative;
 }
 
 .filled {

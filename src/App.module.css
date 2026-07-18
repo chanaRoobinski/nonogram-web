@@ -5,6 +5,13 @@
   min-height: 100vh;
 }
 
+.demoControls {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
 .title {
   margin: 0 0 16px;
   text-align: center;
