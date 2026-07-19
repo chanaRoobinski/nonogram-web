@@ -333,6 +333,12 @@
   browser touch-to-mouse synthesis) could have caught. React may attach touch listeners as
   passive for scroll-performance reasons, which silently defeats `preventDefault()` inside them;
   the timestamp guard works regardless of that.
+- **CI bumped from Node 20 to Node 22.** The `--no-experimental-webstorage` fix above passed
+  locally (Node 26) but broke CI's `test` job: Node 20 doesn't have the experimental webstorage
+  global at all, so it doesn't recognize the flag as valid for `NODE_OPTIONS` and rejects it
+  outright ("not allowed in NODE_OPTIONS") rather than ignoring it. Node 22+ has the flag.
+  Applied to both CI jobs for consistency, though only `test` (vitest) actually needs it — `e2e`
+  (Playwright) never hit this since it doesn't run through the same `npm run test` script.
 
 ### Design import (Stage 0 step 4) — completed 2026-07-19
 
