@@ -1,8 +1,8 @@
 # Progress Tracker — Nonogram Web Client
 
-## Current stage: Stage 3 — Interactive Board
+## Current stage: Stage 4 — Game Flow
 ## Status: Complete
-## Active branch: feature/stage-3-interactive-board (pending PR merge)
+## Active branch: feature/stage-4-game-flow (pending PR merge)
 ## Last updated: 2026-07-19
 
 ### Completed stages ✅
@@ -49,9 +49,40 @@
   - Manually verified against the real design behavior via a local Playwright script driving
     click/drag/right-click/keyboard/undo in the running dev app — all matched expectations,
     including the right-click "✕" mark matching the design exactly
+- [x] Stage 4 — Game Flow
+  - `PuzzleSetupForm.tsx`: size slider (5–50 step 5, square only — matches the design's single
+    unified size control), 4 difficulty buttons (design shows 3; extended to include
+    `VERY_HARD` since the backend supports it), generate button with loading/error states, and
+    the manual "create your own" toggle + its finish/cancel notice
+  - `useGameState.ts`: wraps `useBoardState` with a timer, `checkSolution`/`giveHint` (both
+    lazily fetch-and-cache the real solution via `POST /puzzles/solve` for generated puzzles, or
+    use the drawn grid directly for manual puzzles — see decisions below), and win detection
+  - `PlayArea.tsx`: the action sidebar (timer, check/hint, undo/redo, reset-all) + board + win
+    modal, all sharing one `useGameState` instance; remounted (via a `key`) on every new puzzle
+    or "reset all" click instead of adding reducer actions for those cases
+  - `GameScreen.tsx`: composes setup form + play area + manual edit-mode board; auto-generates a
+    default 5×5 Easy puzzle on mount (the design never shows an empty/no-puzzle state);
+    difficulty-mismatch banner shown when `exact_match: false`
+  - `manualPuzzle.ts`: `isValidManualSolution` (rejects all-empty/all-filled drafts) and
+    `deriveCluesFromSolution` (reuses Stage 2's `runsOfLine`), unit tested
+  - `Cell.tsx` gained a `wrong` visual state (design's red flash + shake) for check-solution
+    feedback; `Board.tsx` accepts an optional `wrongCells` set
+  - CI extended with a new `e2e` job: checks out `nonogram-app` alongside this repo, installs
+    and runs a real `uvicorn` backend, then runs the Playwright suite against it — see decisions
+    below for why (project owner chose a live backend over mocking for E2E)
+  - `playwright.config.ts` made port-configurable (`E2E_PORT`, default 5173) with `strictPort`,
+    since Vite's silent fallback to 5174/5175/etc when another local project already holds 5173
+    would otherwise desync the config from what's actually running — caught by hand while
+    verifying this stage locally (see also the CORS fix below)
+  - 9 new component tests (`PuzzleSetupForm` loading/error/disabled-during-edit,
+    `GameScreen` manual-edit-mode draw→derive→play and cancel, difficulty-mismatch banner) +
+    1 E2E test (generate → move → undo → hint-to-completion → check → win) — full suite now 63
+    unit/component tests + 1 E2E test
+  - Manually verified the entire flow (generate, check with wrong cells, repeated hints, manual
+    edit mode draw→finish→play) against a real local backend via Playwright screenshots —
+    matches the imported design closely
 
 ### Future stages ⏳
-- [ ] Stage 4 — Game Flow (setup form → generate → play → check solution)
 - [ ] Stage 5 — UX Polish (timer, persistence, mobile/touch, responsive layout)
 - [ ] Stage 6 — Accessibility & E2E Coverage
 - [ ] Stage 7 — Documentation & Polish
@@ -166,6 +197,71 @@
   225 stops in the page's Tab order, which is a real usability problem, not just a nicety.
   Stage 6 still owns the full ARIA/screen-reader pass and automated `axe-core` checks; this is
   just the baseline keyboard-operability the skill's Stage 3 explicitly asked for.
+- **E2E runs against a real live backend, not a mock** (project owner, 2026-07-19). CI's new
+  `e2e` job checks out `nonogram-app` alongside this repo, installs it, and starts a real
+  `uvicorn` server the Playwright suite talks to — a bigger, cross-repo CI change than mocking
+  would have been, but it's what was asked for, and it means E2E actually catches real
+  frontend/backend integration bugs (a mocked suite only proves the frontend behaves correctly
+  against whatever shape *we* assumed the backend returns).
+- **The E2E test never depends on knowing a specific generated puzzle's solution in advance**
+  (the backend generates a real, non-deterministic puzzle each run, with no seed exposed through
+  the UI). Instead: make one move, undo it (proving undo works and leaving the board blank),
+  then click "hint" repeatedly (bounded by grid size) until every correct cell is revealed, then
+  check. This is deterministic and robust regardless of which specific puzzle gets generated,
+  and doesn't require adding a test-only seed parameter to the UI.
+- **`playwright.config.ts`'s port is now overridable (`E2E_PORT`) with `strictPort: true`** on
+  the dev server it spawns. Found by hand while verifying this stage: this dev machine had
+  another, unrelated local project already holding ports 5173 and 5174, so Vite's default
+  "silently try the next port" behavior meant Playwright's hardcoded `webServer.url` no longer
+  matched reality. `strictPort` makes a port conflict fail loudly and immediately instead of
+  silently drifting; `E2E_PORT` lets it be pointed elsewhere when 5173 is unavailable. Doesn't
+  affect CI (a clean runner never has this conflict) — purely a local-dev-environment
+  robustness fix.
+- **Backend CORS fixed again, more robustly, for the same underlying reason** (`nonogram-app`
+  PR — allow any `http://localhost:<port>` via a regex instead of a single fixed origin). The
+  original Stage 0 CORS fix hardcoded `:5173`; it broke the instant Vite fell back to a
+  different port for the reason above. Scoped to `localhost` only, never a wildcard for all
+  origins.
+- **Hint/check-solution for a *manually-created* puzzle never calls `POST /puzzles/solve` at
+  all** — unlike generated puzzles, the client already has the exact solution (the user's own
+  drawn grid) the moment editing finishes, so there's nothing to fetch. `useGameState`'s
+  `SolutionSource` type (`{ type: 'known'; solution }` vs. `{ type: 'fetch' }`) makes this
+  explicit rather than routing every puzzle through the same network round-trip regardless of
+  whether it's actually needed.
+- **Win detection happens only inside `checkSolution`, never inside `giveHint`** — a direct,
+  consistent extension of the already-resolved "on-demand only" decision. If a hint happens to
+  fill the last remaining correct cell, the win modal doesn't appear until the player explicitly
+  clicks "check solution" afterward. Not re-litigated as a new ambiguous decision, since it
+  follows directly from applying the existing ruling uniformly to every correctness signal, not
+  just wrong-cell flashing.
+- **The design's live "mistakes" counter (incremented on every incorrect fill, in real time) is
+  not implemented** — it's mechanically incompatible with the resolved "the client never diffs
+  the player's grid against the solution while they play" decision; a live mistake count *is*
+  that live diffing. Omitted as a direct, forced consequence of the earlier decision, not a new
+  guess. The records/history feature (Stage 5) can track mistakes-per-completed-game (measured
+  at check-solution time) instead, if wanted.
+- **Records/history modal, print, and zoom are still Stage 5**, per the Stage 0 follow-up
+  decision — not touched in this stage.
+- **Manual edit mode's own drawing interaction is a plain local `useState` toggle (click =
+  FILLED ↔ UNKNOWN only)**, entirely separate from `useBoardState`'s reducer — no drag-paint,
+  right-click, or undo/redo needed for a one-shot scratch drawing, and `Board.tsx`'s existing
+  callback-prop design already supported swapping in different interaction handlers without any
+  changes to `Board`/`Cell` themselves.
+- **`GameScreen` auto-generates a default 5×5 Easy puzzle on mount** rather than showing an empty
+  "no puzzle yet" state — the imported design never depicts an empty state at all, it always has
+  a puzzle ready.
+- **Difficulty levels: 4 buttons, not the design's 3** — the design's mockup only shows
+  easy/medium/hard, but the backend's `DifficultyLevel` enum also has `VERY_HARD`. Extended the
+  design's own button-list pattern to include it rather than arbitrarily withholding a real
+  backend capability from the UI.
+- **Puzzle size is a single unified control (5–50, step 5, square only)**, matching the design's
+  own single `size` slider exactly, even though the backend API supports independent
+  `num_rows`/`num_cols`. Following the design's simpler model, not a gap — it doesn't show
+  separate width/height controls anywhere.
+- **`max_attempts` sent to `/puzzles/generate` is a hardcoded client constant (200)** — the
+  backend has no default (`max_attempts` is a required param by the backend's own design), so
+  the caller must supply one. Not surfaced as a user-facing setting; revisit if 200 proves too
+  low/high in practice.
 
 ### Design import (Stage 0 step 4) — completed 2026-07-19
 
