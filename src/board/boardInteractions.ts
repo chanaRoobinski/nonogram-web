@@ -10,6 +10,22 @@ export function cellElementId(row: number, col: number): string {
   return `ng-cell-${row}-${col}`
 }
 
+// Browsers fire synthetic mousedown/mouseenter/click events shortly after a real touchstart, for
+// compatibility with sites that only listen for mouse events. Without suppressing those, a single
+// tap double-cycles a cell (once via our touch handler, once via the browser's ghost mouse
+// event). Module-level rather than per-component state since the guard needs to be shared across
+// whichever cell receives the touch and whichever receives the resulting ghost mouse event.
+let lastTouchTimestamp = 0
+const TOUCH_GHOST_EVENT_WINDOW_MS = 800
+
+export function markTouchInteraction(): void {
+  lastTouchTimestamp = Date.now()
+}
+
+export function isLikelyGhostMouseEvent(): boolean {
+  return Date.now() - lastTouchTimestamp < TOUCH_GHOST_EVENT_WINDOW_MS
+}
+
 /** Arrow-key navigation target, or null if the key isn't a nav key or would move off the grid.
  * The board forces its own `direction: ltr` regardless of the app shell's RTL, so Left/Right
  * always mean decrease/increase column — no mirroring here. */

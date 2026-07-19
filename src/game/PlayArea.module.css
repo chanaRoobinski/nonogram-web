@@ -88,7 +88,27 @@
   color: #fff;
 }
 
+.recordsButton {
+  background: var(--ng-btn-neutral);
+  color: var(--ng-surface-raised);
+  border: none;
+  border-radius: 6px;
+  padding: 9px 10px;
+  font-size: 13px;
+  font-family: var(--ng-font-body);
+  cursor: pointer;
+  transition:
+    transform 0.12s ease,
+    background 0.15s ease;
+}
+
+.recordsButton:hover {
+  background: var(--ng-btn-neutral-hover);
+  transform: translateY(-1px);
+}
+
 .main {
+  position: relative;
   flex: 1;
   min-width: 0;
   display: flex;
@@ -96,6 +116,106 @@
   justify-content: center;
   overflow: auto;
   padding: 16px;
+}
+
+.zoomControls {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--ng-surface-raised);
+  border: 1px solid var(--ng-btn-neutral);
+  border-radius: 8px;
+  padding: 4px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.zoomButton {
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: transparent;
+  color: var(--ng-btn-neutral);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+.zoomButton:hover {
+  background: var(--ng-bg-dot);
+}
+
+.zoomDivider {
+  height: 1px;
+  background: var(--ng-border);
+}
+
+.printButton {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 5;
+  background: transparent;
+  color: var(--ng-btn-neutral);
+  border: 1px solid var(--ng-btn-neutral);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-family: var(--ng-font-body);
+  cursor: pointer;
+}
+
+.printButton:hover {
+  background: var(--ng-bg-dot);
+}
+
+.printArea {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+@media (max-width: 700px) {
+  .actionSidebar {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .undoRedoRow {
+    flex-wrap: wrap;
+  }
+
+  .zoomControls {
+    top: 8px;
+    left: 8px;
+  }
+
+  .printButton {
+    top: 8px;
+    right: 8px;
+    padding: 6px 8px;
+  }
+}
+
+@media print {
+  .actionSidebar,
+  .zoomControls,
+  .printButton,
+  .winOverlay {
+    display: none !important;
+  }
+
+  .main {
+    flex: none;
+    width: 100%;
+    overflow: visible;
+    padding: 0;
+  }
 }
 
 .mismatchBanner {

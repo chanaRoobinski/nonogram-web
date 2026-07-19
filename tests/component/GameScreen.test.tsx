@@ -95,6 +95,50 @@ describe('GameScreen — manual puzzle creation (edit mode)', () => {
   })
 })
 
+describe('GameScreen — persistence round-trip', () => {
+  beforeEach(() => {
+    server.use(
+      http.post('http://localhost:8000/puzzles/generate', () =>
+        HttpResponse.json({
+          row_clues: EMPTY_5X5_CLUES,
+          col_clues: EMPTY_5X5_CLUES,
+          difficulty: { score: 0.1, category: 'EASY', suitable_for_human: true },
+          exact_match: true,
+        }),
+      ),
+    )
+  })
+
+  afterEach(() => {
+    server.resetHandlers()
+  })
+
+  it('restores progress after a simulated reload (unmount + remount)', async () => {
+    const user = userEvent.setup()
+    const first = renderGameScreen()
+
+    await waitFor(() =>
+      expect(first.container.querySelector('#ng-cell-0-0')).toBeInTheDocument(),
+    )
+    await user.click(first.container.querySelector('#ng-cell-2-2') as HTMLElement)
+    await waitFor(() =>
+      expect(
+        first.container.querySelector('#ng-cell-2-2')?.className,
+      ).toMatch(/filled/),
+    )
+
+    first.unmount()
+
+    const second = renderGameScreen()
+    await waitFor(() =>
+      expect(second.container.querySelector('#ng-cell-0-0')).toBeInTheDocument(),
+    )
+    expect(second.container.querySelector('#ng-cell-2-2')?.className).toMatch(
+      /filled/,
+    )
+  })
+})
+
 describe('GameScreen — difficulty-mismatch banner', () => {
   afterEach(() => {
     server.resetHandlers()

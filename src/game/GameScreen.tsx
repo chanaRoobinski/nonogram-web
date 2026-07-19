@@ -4,9 +4,11 @@ import { CellState, createEmptyGrid } from '../board/cellState'
 import { useGeneratePuzzle } from '../api/hooks/useGeneratePuzzle'
 import type { components } from '../api/generated/schema'
 import { PuzzleSetupForm } from './PuzzleSetupForm'
+import type { DifficultyLevel } from './difficulty'
 import { PlayArea } from './PlayArea'
 import type { SolutionSource } from './useGameState'
 import { deriveCluesFromSolution, isValidManualSolution } from './manualPuzzle'
+import { loadSavedGame } from './persistence'
 import styles from './GameScreen.module.css'
 
 type GenerateResponse = components['schemas']['GenerateResponse']
@@ -18,14 +20,26 @@ interface Puzzle {
   exactMatch?: boolean
 }
 
+interface RestoredPlayState {
+  grid: CellState[][]
+  elapsedSeconds: number
+  won: boolean
+}
+
 const DEFAULT_SIZE = 5
+const DEFAULT_DIFFICULTY: DifficultyLevel = 'EASY'
 const DEFAULT_MAX_ATTEMPTS = 200
 
 function noop() {}
 
 export function GameScreen() {
   const [size, setSize] = useState(DEFAULT_SIZE)
+  const [difficulty, setDifficulty] = useState<DifficultyLevel>(
+    DEFAULT_DIFFICULTY,
+  )
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null)
+  const [restoredPlayState, setRestoredPlayState] =
+    useState<RestoredPlayState | null>(null)
   const [puzzleKey, setPuzzleKey] = useState(0)
   const [resetNonce, setResetNonce] = useState(0)
   const [editMode, setEditMode] = useState(false)
@@ -35,14 +49,31 @@ export function GameScreen() {
 
   const initialGenerate = useGeneratePuzzle()
 
-  // The imported design never shows an "no puzzle yet" state — it always has one to play, so we
-  // auto-generate a default puzzle on first mount rather than starting from an empty board.
+  // Restore a saved game if one exists; otherwise auto-generate a default puzzle — the imported
+  // design never shows an "no puzzle yet" state, it always has one to play.
   useEffect(() => {
+    const saved = loadSavedGame()
+    if (saved) {
+      setPuzzle({
+        rowClues: saved.rowClues,
+        colClues: saved.colClues,
+        solutionSource: saved.solutionSource,
+      })
+      setSize(saved.size)
+      setDifficulty(saved.difficulty)
+      setRestoredPlayState({
+        grid: saved.grid,
+        elapsedSeconds: saved.elapsedSeconds,
+        won: saved.won,
+      })
+      setPuzzleKey((k) => k + 1)
+      return
+    }
     initialGenerate.mutate(
       {
         num_rows: DEFAULT_SIZE,
         num_cols: DEFAULT_SIZE,
-        difficulty: 'EASY',
+        difficulty: DEFAULT_DIFFICULTY,
         max_attempts: DEFAULT_MAX_ATTEMPTS,
       },
       { onSuccess: (response) => handleGenerated(response, DEFAULT_SIZE) },
@@ -59,6 +90,7 @@ export function GameScreen() {
       exactMatch: response.exact_match,
     })
     setSize(generatedSize)
+    setRestoredPlayState(null)
     setPuzzleKey((k) => k + 1)
     setEditMode(false)
   }
@@ -84,8 +116,14 @@ export function GameScreen() {
       colClues,
       solutionSource: { type: 'known', solution: editDraft },
     })
+    setRestoredPlayState(null)
     setPuzzleKey((k) => k + 1)
     setEditMode(false)
+  }
+
+  function handleResetAll() {
+    setRestoredPlayState(null)
+    setResetNonce((n) => n + 1)
   }
 
   function toggleDraftCell(row: number, col: number) {
@@ -121,8 +159,13 @@ export function GameScreen() {
             rowClues={puzzle.rowClues}
             colClues={puzzle.colClues}
             solutionSource={puzzle.solutionSource}
+            size={size}
+            difficulty={difficulty}
             exactMatch={puzzle.exactMatch}
-            onResetAll={() => setResetNonce((n) => n + 1)}
+            initialGrid={restoredPlayState?.grid}
+            initialElapsedSeconds={restoredPlayState?.elapsedSeconds}
+            initialWon={restoredPlayState?.won}
+            onResetAll={handleResetAll}
           />
         )}
 
@@ -142,6 +185,8 @@ export function GameScreen() {
         <PuzzleSetupForm
           size={size}
           onSizeChange={setSize}
+          difficulty={difficulty}
+          onDifficultyChange={setDifficulty}
           onGenerated={handleGenerated}
           editMode={editMode}
           onToggleEditMode={handleToggleEditMode}

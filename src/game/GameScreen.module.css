@@ -42,3 +42,43 @@
   overflow: auto;
   padding: 16px;
 }
+
+/* Below this, the two fixed 210px sidebars alone would already exceed the viewport width, so
+   stack everything into one column instead — board first (what the player came for), then the
+   two control panels below it. */
+@media (max-width: 700px) {
+  .root {
+    padding: 10px;
+  }
+
+  .layout {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sidebarPlaceholder {
+    display: none;
+  }
+
+  .main {
+    order: -1;
+    padding: 8px;
+  }
+}
+
+@media print {
+  .title,
+  .sidebarPlaceholder {
+    display: none !important;
+  }
+
+  .root {
+    padding: 0;
+    min-height: 0;
+    width: 100%;
+  }
+
+  .layout {
+    width: 100%;
+  }
+}

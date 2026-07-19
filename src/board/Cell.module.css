@@ -14,6 +14,10 @@
   color: var(--ng-cell-mark-color);
   font: inherit;
   font-weight: 700;
+  /* Let the browser suppress its default touch gestures (scroll/pinch) on the board instead of
+     fighting them with preventDefault() in a touchmove handler, which React attaches as a
+     passive listener and can't reliably block anyway. */
+  touch-action: none;
 }
 
 .cell:focus-visible {
@@ -55,6 +59,14 @@
 .wrong {
   background: var(--ng-cell-wrong);
   animation: shake 0.4s ease;
+}
+
+/* A subtle tint for cells in a row/column whose clue is currently satisfied — the design only
+   strikes through the clue text itself; this extends that same feedback onto the cells (a gap
+   the design doesn't cover, styled as a translucent wash so it still reads on top of the dark
+   fill color, not just on empty cells). */
+.lineComplete {
+  box-shadow: inset 0 0 0 999px oklch(0.9 0.05 145 / 0.35);
 }
 
 .thickRight {

@@ -34,3 +34,9 @@ export function isClueSatisfied(
   if (actualRuns.length !== normalizedClue.length) return false
   return actualRuns.every((run, i) => run === normalizedClue[i])
 }
+
+/** The longest clue line's run count, across a whole row/col clue set — at least 1, so an
+ * empty puzzle still reserves space for its (single, "0") clue number. */
+export function maxClueLength(clues: readonly (readonly number[])[]): number {
+  return Math.max(1, ...clues.map((clue) => clue.length))
+}

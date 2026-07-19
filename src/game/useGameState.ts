@@ -2,12 +2,23 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useBoardState } from '../board/boardInteractions'
 import { CellState, createEmptyGrid } from '../board/cellState'
 import { useSolvePuzzle } from '../api/hooks/useSolvePuzzle'
+import type { DifficultyLevel } from './difficulty'
+import { recordCompletion } from './records'
+import { saveGame } from './persistence'
 
 export type SolutionSource =
   | { type: 'known'; solution: CellState[][] }
   | { type: 'fetch' }
 
 const WRONG_FLASH_MS = 900
+
+export interface UseGameStateOptions {
+  size: number
+  difficulty: DifficultyLevel
+  initialGrid?: CellState[][]
+  initialElapsedSeconds?: number
+  initialWon?: boolean
+}
 
 /**
  * Board state + timer + hint/check-solution, for one puzzle. Callers should remount this (via a
@@ -19,18 +30,24 @@ export function useGameState(
   rowClues: number[][],
   colClues: number[][],
   solutionSource: SolutionSource,
+  options: UseGameStateOptions,
 ) {
+  const { size, difficulty, initialGrid, initialElapsedSeconds, initialWon } =
+    options
   const numRows = rowClues.length
   const numCols = colClues.length
-  const board = useBoardState(createEmptyGrid(numRows, numCols))
+  const board = useBoardState(initialGrid ?? createEmptyGrid(numRows, numCols))
   const solvePuzzle = useSolvePuzzle()
   const cachedSolution = useRef<CellState[][] | null>(
     solutionSource.type === 'known' ? solutionSource.solution : null,
   )
+  const hasRecordedCompletion = useRef(initialWon ?? false)
 
-  const [won, setWon] = useState(false)
+  const [won, setWon] = useState(initialWon ?? false)
   const [wrongCells, setWrongCells] = useState<ReadonlySet<string>>(new Set())
-  const [elapsedSeconds, setElapsedSeconds] = useState(0)
+  const [elapsedSeconds, setElapsedSeconds] = useState(
+    initialElapsedSeconds ?? 0,
+  )
   const [solveError, setSolveError] = useState(false)
 
   useEffect(() => {
@@ -38,6 +55,22 @@ export function useGameState(
     const interval = setInterval(() => setElapsedSeconds((s) => s + 1), 1000)
     return () => clearInterval(interval)
   }, [won])
+
+  // Persist progress on every move and every timer tick, so a reload restores exactly where the
+  // player was. A small JSON blob written to localStorage once a second is cheap enough that
+  // there's no need to throttle it further.
+  useEffect(() => {
+    saveGame({
+      size,
+      difficulty,
+      rowClues,
+      colClues,
+      solutionSource,
+      grid: board.grid,
+      elapsedSeconds,
+      won,
+    })
+  }, [board.grid, elapsedSeconds, won, size, difficulty, rowClues, colClues, solutionSource])
 
   const ensureSolution = useCallback(async (): Promise<CellState[][] | null> => {
     if (cachedSolution.current) return cachedSolution.current
@@ -78,11 +111,15 @@ export function useGameState(
     if (allCorrect) {
       setWon(true)
       setWrongCells(new Set())
+      if (!hasRecordedCompletion.current) {
+        hasRecordedCompletion.current = true
+        recordCompletion(size, difficulty, elapsedSeconds)
+      }
     } else {
       setWrongCells(wrong)
       setTimeout(() => setWrongCells(new Set()), WRONG_FLASH_MS)
     }
-  }, [ensureSolution, board.grid, numRows, numCols])
+  }, [ensureSolution, board.grid, numRows, numCols, size, difficulty, elapsedSeconds])
 
   const giveHint = useCallback(async () => {
     const solution = await ensureSolution()
