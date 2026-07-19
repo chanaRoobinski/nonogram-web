@@ -23,12 +23,38 @@
   position: relative;
 }
 
+@keyframes pop {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.3;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}
+
 .filled {
   background: var(--ng-cell-filled);
+  animation: pop 0.15s ease;
 }
 
 .wrong {
   background: var(--ng-cell-wrong);
+  animation: shake 0.4s ease;
 }
 
 .thickRight {

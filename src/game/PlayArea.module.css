@@ -1,0 +1,153 @@
+.actionSidebar {
+  width: 210px;
+  min-width: 170px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px 14px;
+  background: var(--ng-surface);
+  border-radius: 8px;
+}
+
+.statRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  background: var(--ng-surface-raised);
+  border: 1px solid var(--ng-btn-neutral);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.statValue {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.divider {
+  height: 1px;
+  background: var(--ng-border);
+  margin: 2px 0;
+}
+
+.sectionLabel {
+  font-size: 12px;
+  color: var(--ng-ink-muted);
+  font-weight: 700;
+}
+
+.actionButton {
+  border: none;
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 14px;
+  font-family: var(--ng-font-body);
+  cursor: pointer;
+  transition:
+    transform 0.12s ease,
+    background 0.15s ease;
+}
+
+.actionButton:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.checkButton {
+  composes: actionButton;
+  background: var(--ng-btn-primary);
+  color: #fff;
+}
+
+.hintButton {
+  composes: actionButton;
+  background: linear-gradient(180deg, #d46960ef, #757572);
+  color: #fff;
+}
+
+.undoRedoRow {
+  display: flex;
+  gap: 6px;
+}
+
+.undoRedoButton {
+  composes: actionButton;
+  flex: 1;
+  background: var(--ng-btn-primary);
+  color: #fff;
+  padding: 9px 16px;
+}
+
+.resetButton {
+  composes: actionButton;
+  background: var(--ng-btn-danger);
+  color: #fff;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow: auto;
+  padding: 16px;
+}
+
+.mismatchBanner {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px dashed var(--ng-record-gold);
+  background: oklch(0.9 0.05 85);
+  color: var(--ng-ink);
+  font-size: 13px;
+  text-align: center;
+}
+
+.winOverlay {
+  position: fixed;
+  inset: 0;
+  background: var(--ng-modal-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.winCard {
+  background: var(--ng-surface-raised);
+  border-radius: 14px;
+  padding: 32px 40px;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  max-width: 340px;
+}
+
+.winEmoji {
+  font-size: 40px;
+  margin-bottom: 8px;
+}
+
+.winTime {
+  margin: 0 0 4px;
+  color: var(--ng-ink-muted);
+}
+
+.winContinue {
+  margin-top: 14px;
+  background: var(--ng-record-gold);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 22px;
+  font-size: 15px;
+  font-family: var(--ng-font-body);
+  cursor: pointer;
+}

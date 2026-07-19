@@ -16,6 +16,7 @@ interface CellProps {
   size: number
   thickRight?: boolean
   thickBottom?: boolean
+  wrong?: boolean
   tabbable: boolean
   onMouseDown: (row: number, col: number) => void
   onMouseEnter: (row: number, col: number) => void
@@ -31,6 +32,7 @@ export function Cell({
   size,
   thickRight,
   thickBottom,
+  wrong,
   tabbable,
   onMouseDown,
   onMouseEnter,
@@ -41,6 +43,7 @@ export function Cell({
   const className = [
     styles.cell,
     state === CellState.FILLED ? styles.filled : '',
+    wrong ? styles.wrong : '',
     thickRight ? styles.thickRight : '',
     thickBottom ? styles.thickBottom : '',
   ]

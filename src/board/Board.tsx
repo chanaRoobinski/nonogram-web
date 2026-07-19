@@ -14,6 +14,8 @@ interface BoardProps {
   /** px per cell. Viewport-fit sizing + zoom are Stage 5 concerns (see PROGRESS.md); this is a
    * plain, overridable default for now. */
   cellSize?: number
+  /** Cells to flash as incorrect, keyed by `${row},${col}` (see PlayArea's check-solution). */
+  wrongCells?: ReadonlySet<string>
   onCellMouseDown: (row: number, col: number) => void
   onCellMouseEnter: (row: number, col: number) => void
   onCellMarkEmpty: (row: number, col: number) => void
@@ -24,6 +26,7 @@ export function Board({
   colClues,
   grid,
   cellSize = 32,
+  wrongCells,
   onCellMouseDown,
   onCellMouseEnter,
   onCellMarkEmpty,
@@ -88,6 +91,7 @@ export function Board({
               size={cellSize}
               thickRight={c % 5 === 4 && c !== numCols - 1}
               thickBottom={r % 5 === 4 && r !== numRows - 1}
+              wrong={wrongCells?.has(`${r},${c}`)}
               tabbable={focusedCell.row === r && focusedCell.col === c}
               onMouseDown={onCellMouseDown}
               onMouseEnter={onCellMouseEnter}

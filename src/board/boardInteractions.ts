@@ -84,6 +84,12 @@ export function useBoardState(initialGrid: CellState[][]) {
     dispatch({ type: 'PAINT_START', row, col, value: CellState.MARKED_EMPTY })
   }, [])
 
+  /** Sets a single cell to an exact value as its own discrete, undoable action — used by
+   * hint reveals, which aren't a click/drag/right-click gesture but still need to be undoable. */
+  const setCell = useCallback((row: number, col: number, value: CellState) => {
+    dispatch({ type: 'PAINT_START', row, col, value })
+  }, [])
+
   const undo = useCallback(() => dispatch({ type: 'UNDO' }), [])
   const redo = useCallback(() => dispatch({ type: 'REDO' }), [])
 
@@ -94,6 +100,7 @@ export function useBoardState(initialGrid: CellState[][]) {
     startPaint,
     continuePaint,
     markEmpty,
+    setCell,
     undo,
     redo,
   }
