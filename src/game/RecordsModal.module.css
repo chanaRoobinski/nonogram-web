@@ -1,0 +1,79 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--ng-modal-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 60;
+}
+
+.card {
+  background: var(--ng-surface-raised);
+  border-radius: 12px;
+  padding: 24px 28px;
+  width: min(420px, 90vw);
+  max-height: 80vh;
+  overflow: auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.header h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: var(--ng-ink-muted);
+}
+
+.sectionTitle {
+  font-size: 14px;
+  color: var(--ng-ink-muted);
+  margin: 0 0 8px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 18px;
+}
+
+.recordRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  padding: 6px 8px;
+  background: var(--ng-bg-dot);
+  border-radius: 6px;
+}
+
+.recordTime {
+  font-weight: 700;
+}
+
+.historyRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--ng-border);
+  color: var(--ng-ink-muted);
+}
+
+.emptyText {
+  font-size: 13px;
+  color: var(--ng-ink-muted);
+  margin: 0 0 18px;
+}

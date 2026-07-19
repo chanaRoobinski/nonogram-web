@@ -1,8 +1,8 @@
 # Progress Tracker — Nonogram Web Client
 
-## Current stage: Stage 4 — Game Flow
+## Current stage: Stage 5 — UX Polish
 ## Status: Complete
-## Active branch: feature/stage-4-game-flow (pending PR merge)
+## Active branch: feature/stage-5-ux-polish (pending PR merge)
 ## Last updated: 2026-07-19
 
 ### Completed stages ✅
@@ -81,9 +81,45 @@
   - Manually verified the entire flow (generate, check with wrong cells, repeated hints, manual
     edit mode draw→finish→play) against a real local backend via Playwright screenshots —
     matches the imported design closely
+- [x] Stage 5 — UX Polish
+  - `persistence.ts`: `saveGame`/`loadSavedGame`/`clearSavedGame` (`localStorage`, key
+    `nonogram-save-v1`). `useGameState` saves on every grid/timer/win change; `GameScreen` tries
+    to restore a saved game on mount before falling back to auto-generating a default puzzle
+  - `records.ts` + `RecordsModal.tsx`: best time per size+difficulty and a 10-entry recent-games
+    list (`nonogram-records-v1` / `nonogram-history-v1`), recorded once per win (guarded against
+    double-recording if "check" is clicked again after already winning)
+  - `useFittedCellSize.ts`: real viewport-fit cell sizing (`ResizeObserver` on the board's
+    container, falls back to a fixed default where `ResizeObserver` doesn't exist, e.g. jsdom in
+    tests) × a zoom multiplier from the design's own +/− buttons; pure `clampZoomIn`/
+    `clampZoomOut` extracted and unit tested
+  - Print button (`window.print()`) + a print stylesheet across `GameScreen`/`PlayArea`/
+    `PuzzleSetupForm` hiding all chrome and showing just the board + clues, centered
+  - Touch support for drag-to-paint: `Board.tsx`'s `onTouchMove` resolves the cell under the
+    finger via `elementFromPoint` (touchmove keeps firing on the *original* touched element,
+    unlike `mouseenter`); `touch-action: none` on cells lets the browser suppress default
+    scroll/pinch natively instead of fighting it with `preventDefault()` inside a listener React
+    may attach as passive
+  - Responsive mobile layout: below 700px the two fixed-210px sidebars alone would exceed the
+    viewport, so `.layout` stacks into one column (board first via `order: -1`, then the two
+    control panels) — a real gap found while manually testing touch on a phone-sized viewport,
+    not something the imported design (a fixed desktop-oriented mockup) showed
+  - Visual feedback for a completed row/column: cells in a satisfied line get a translucent
+    green wash (a gap the design doesn't cover — it only strikes through the clue *text*)
+  - 15 new tests: `persistence` (5 unit — round-trip, manual-puzzle solution round-trip, clear,
+    corrupted-JSON safety), `records` (7 unit — new/updated/unchanged records, per-combination
+    isolation, history ordering + 10-entry cap), `useFittedCellSize` (4 unit — zoom clamping at
+    both bounds), 1 new `GameScreen` component test (persistence round-trip via unmount+remount,
+    simulating a reload) — full suite now 80 unit/component tests + 2 E2E tests (the existing
+    game-flow test, plus a new touch-simulated drag-paint test on a mobile-shaped viewport)
+  - Manually verified zoom, print (via `page.emulateMedia`), records modal, and a real
+    reload round-trip against a live backend via Playwright screenshots
+  - Found and fixed a real bug while verifying touch manually: browsers fire a synthetic
+    "ghost" `mousedown`/`mouseenter` shortly after a real `touchstart`, which was double-firing
+    the paint cycle (one tap → two state transitions). Fixed with a module-level "was this a
+    recent touch" guard in `boardInteractions.ts`, since `preventDefault()` inside the touch
+    handler alone wasn't reliably suppressing it (a well-known React passive-listener limitation)
 
 ### Future stages ⏳
-- [ ] Stage 5 — UX Polish (timer, persistence, mobile/touch, responsive layout)
 - [ ] Stage 6 — Accessibility & E2E Coverage
 - [ ] Stage 7 — Documentation & Polish
 
@@ -262,6 +298,47 @@
   backend has no default (`max_attempts` is a required param by the backend's own design), so
   the caller must supply one. Not surfaced as a user-facing setting; revisit if 200 proves too
   low/high in practice.
+- **No explicit pause/resume control** (the skill's Stage 5 line was "Timer display and *(if
+  decided)* pause/resume"). The imported design has no pause button, and with persistence now
+  saving `elapsedSeconds` continuously, closing the tab and coming back already behaves like a
+  de-facto pause — a dedicated button would be a new UI element the design doesn't show, for a
+  need persistence already covers.
+- **Records are keyed by whatever size+difficulty the setup form currently shows, even for
+  manually-created puzzles** (which have no real "difficulty" of their own) — matches the
+  imported design's own behavior exactly: it calls the same `newPuzzle`-adjacent recording path
+  regardless of how the current puzzle was produced, using whatever `difficulty` state happens to
+  be selected. Not treated as a gap needing a decision, since the design already settled it.
+- **A completed win is recorded at most once per `PlayArea` mount**, guarded by a ref rather than
+  reading `won` state (which would be stale in `checkSolution`'s closure without adding `won` to
+  its dependency list, and adding it would re-create the callback on every win-state change for
+  no benefit). Prevents duplicate history entries if the player dismisses the win modal and clicks
+  "check" again on an already-solved board.
+- **`useFittedCellSize` measures the real `<main>` container via `ResizeObserver`** rather than
+  replicating the design's own viewport-minus-sidebar-widths arithmetic — our layout is already
+  flexbox-driven and self-adjusting (including the new mobile stacking below), so measuring the
+  actual rendered container is more robust than re-deriving its size from assumptions about
+  sidebar widths that no longer hold on narrow viewports anyway. Falls back to a fixed 32px
+  default when `ResizeObserver` isn't available (jsdom in tests has none), rather than crashing or
+  computing from a bogus zero size.
+- **Responsive breakpoint (700px) added even though the imported design is a fixed desktop
+  mockup with no responsive states shown at all.** Treated as required, not a gap to ask about —
+  the skill's Stage 5 explicitly lists "Responsive/touch-friendly layout for mobile" as a
+  concrete deliverable, and touch support is functionally meaningless without a layout that fits
+  a phone screen in the first place (confirmed directly: manual touch testing was unusable before
+  this fix, since the two fixed 210px sidebars alone exceeded a 390px viewport).
+- **Ghost mouse-event suppression uses a module-level timestamp guard, not `event.preventDefault()`
+  alone.** `preventDefault()` was already being called in the touch handler, but browsers still
+  fired synthetic mousedown/mouseenter afterward, double-cycling a cell on a single tap — found by
+  hand while verifying touch, not something the unit/component tests (which don't exercise real
+  browser touch-to-mouse synthesis) could have caught. React may attach touch listeners as
+  passive for scroll-performance reasons, which silently defeats `preventDefault()` inside them;
+  the timestamp guard works regardless of that.
+- **CI bumped from Node 20 to Node 22.** The `--no-experimental-webstorage` fix above passed
+  locally (Node 26) but broke CI's `test` job: Node 20 doesn't have the experimental webstorage
+  global at all, so it doesn't recognize the flag as valid for `NODE_OPTIONS` and rejects it
+  outright ("not allowed in NODE_OPTIONS") rather than ignoring it. Node 22+ has the flag.
+  Applied to both CI jobs for consistency, though only `test` (vitest) actually needs it — `e2e`
+  (Playwright) never hit this since it doesn't run through the same `npm run test` script.
 
 ### Design import (Stage 0 step 4) — completed 2026-07-19
 

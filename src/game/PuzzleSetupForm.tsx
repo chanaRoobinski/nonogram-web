@@ -1,17 +1,9 @@
-import { useState } from 'react'
 import { useGeneratePuzzle } from '../api/hooks/useGeneratePuzzle'
 import type { components } from '../api/generated/schema'
+import { DIFFICULTY_OPTIONS, type DifficultyLevel } from './difficulty'
 import styles from './PuzzleSetupForm.module.css'
 
-type DifficultyLevel = components['schemas']['DifficultyLevel']
 type GenerateResponse = components['schemas']['GenerateResponse']
-
-const DIFFICULTY_OPTIONS: { value: DifficultyLevel; label: string }[] = [
-  { value: 'EASY', label: 'קל' },
-  { value: 'MEDIUM', label: 'בינוני' },
-  { value: 'HARD', label: 'קשה' },
-  { value: 'VERY_HARD', label: 'קשה מאוד' },
-]
 
 /** No backend default exists (max_attempts is a required param) — see PROGRESS.md. */
 const MAX_GENERATE_ATTEMPTS = 200
@@ -19,6 +11,8 @@ const MAX_GENERATE_ATTEMPTS = 200
 interface PuzzleSetupFormProps {
   size: number
   onSizeChange: (size: number) => void
+  difficulty: DifficultyLevel
+  onDifficultyChange: (difficulty: DifficultyLevel) => void
   onGenerated: (response: GenerateResponse, size: number) => void
   editMode: boolean
   onToggleEditMode: () => void
@@ -30,6 +24,8 @@ interface PuzzleSetupFormProps {
 export function PuzzleSetupForm({
   size,
   onSizeChange,
+  difficulty,
+  onDifficultyChange,
   onGenerated,
   editMode,
   onToggleEditMode,
@@ -37,7 +33,6 @@ export function PuzzleSetupForm({
   onFinishEdit,
   onCancelEdit,
 }: PuzzleSetupFormProps) {
-  const [difficulty, setDifficulty] = useState<DifficultyLevel>('EASY')
   const generatePuzzle = useGeneratePuzzle()
 
   function handleGenerate() {
@@ -85,7 +80,7 @@ export function PuzzleSetupForm({
                   : styles.difficultyButton
               }
               disabled={editMode}
-              onClick={() => setDifficulty(option.value)}
+              onClick={() => onDifficultyChange(option.value)}
             >
               {option.label}
             </button>
