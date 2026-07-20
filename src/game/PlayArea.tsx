@@ -6,6 +6,7 @@ import type { SolutionSource } from './useGameState'
 import type { DifficultyLevel } from './difficulty'
 import { formatElapsed } from './formatElapsed'
 import { RecordsModal } from './RecordsModal'
+import { WinModal } from './WinModal'
 import { useFittedCellSize } from '../board/useFittedCellSize'
 import styles from './PlayArea.module.css'
 
@@ -66,7 +67,7 @@ export function PlayArea({
 
   return (
     <>
-      <aside className={styles.actionSidebar}>
+      <aside className={styles.actionSidebar} aria-label="פעולות משחק">
         <div className={styles.statRow}>
           <span>⏱ זמן</span>
           <span className={styles.statValue}>
@@ -131,7 +132,7 @@ export function PlayArea({
         </button>
       </aside>
 
-      <main className={styles.main} ref={containerRef}>
+      <main className={styles.main} ref={containerRef} aria-label="לוח המשחק">
         <div className={styles.zoomControls}>
           <button
             type="button"
@@ -180,22 +181,7 @@ export function PlayArea({
       </main>
 
       {won && (
-        <div className={styles.winOverlay}>
-          <div className={styles.winCard}>
-            <div className={styles.winEmoji}>🎉</div>
-            <h2>פתרתם את החידה!</h2>
-            <p className={styles.winTime}>
-              זמן: <b>{formatElapsed(elapsedSeconds)}</b>
-            </p>
-            <button
-              type="button"
-              className={styles.winContinue}
-              onClick={dismissWin}
-            >
-              המשך
-            </button>
-          </div>
-        </div>
+        <WinModal elapsedSeconds={elapsedSeconds} onDismiss={dismissWin} />
       )}
 
       {showRecords && <RecordsModal onClose={() => setShowRecords(false)} />}

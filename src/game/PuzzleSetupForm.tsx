@@ -7,6 +7,11 @@ type GenerateResponse = components['schemas']['GenerateResponse']
 
 /** No backend default exists (max_attempts is a required param) — see PROGRESS.md. */
 const MAX_GENERATE_ATTEMPTS = 200
+/** The design's own slider goes to 50, but generation time explodes well before that — measured
+ * directly against the backend: 15×15 ≈ 11.5s, 20×20 ≈ 45s, 25×25 didn't finish in 2 minutes.
+ * Capped here so the UI can't trigger a multi-minute (or effectively hung) request; backend
+ * generator performance at scale is tracked separately (see PROGRESS.md), not fixed by this cap. */
+const MAX_SIZE = 20
 
 interface PuzzleSetupFormProps {
   size: number
@@ -48,7 +53,7 @@ export function PuzzleSetupForm({
   }
 
   return (
-    <div className={styles.sidebar}>
+    <aside className={styles.sidebar} aria-label="הגדרות חידה">
       <div>
         <span className={styles.label}>
           גודל: {size}×{size}
@@ -57,7 +62,7 @@ export function PuzzleSetupForm({
           <input
             type="range"
             min={5}
-            max={50}
+            max={MAX_SIZE}
             step={5}
             value={size}
             disabled={editMode}
@@ -136,6 +141,6 @@ export function PuzzleSetupForm({
           </div>
         </div>
       )}
-    </div>
+    </aside>
   )
 }

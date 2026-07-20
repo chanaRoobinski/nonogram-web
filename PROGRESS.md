@@ -1,9 +1,9 @@
 # Progress Tracker — Nonogram Web Client
 
-## Current stage: Stage 5 — UX Polish
+## Current stage: Stage 6 — Accessibility & E2E Coverage
 ## Status: Complete
-## Active branch: feature/stage-5-ux-polish (pending PR merge)
-## Last updated: 2026-07-19
+## Active branch: feature/stage-6-accessibility-e2e (pending PR merge)
+## Last updated: 2026-07-20
 
 ### Completed stages ✅
 - [x] Stage 0 — Project Scaffolding, CI & Generated API Types (pushed directly to `main`, per
@@ -118,9 +118,32 @@
     the paint cycle (one tap → two state transitions). Fixed with a module-level "was this a
     recent touch" guard in `boardInteractions.ts`, since `preventDefault()` inside the touch
     handler alone wasn't reliably suppressing it (a well-known React passive-listener limitation)
+- [x] Stage 6 — Accessibility & E2E Coverage
+  - ARIA grid semantics: `Board` gets `role="grid"` + `aria-rowcount`/`aria-colcount`; each row
+    is `role="row"`; `ClueList` strips are `role="rowheader"`/`"columnheader"` with a combined
+    `aria-label` (e.g. "רמז שורה: 3, 1"); `Cell` is `role="gridcell"` with a label describing
+    row/column/state (now including "שגוי" when flagged wrong by check-solution)
+  - `useModalA11y.ts`: a small reusable hook giving both `RecordsModal` and the new `WinModal`
+    (split out of `PlayArea` so the hook can be called conditionally on mount) standard dialog
+    behavior — focus moves in on open, Tab/Shift+Tab is trapped inside, Escape closes, focus
+    returns to the trigger on close
+  - `@axe-core/playwright` scans three real app states (main screen, records modal, manual edit
+    mode) in CI — found and fixed three genuine, previously-undetected bugs (see decisions below)
+  - Expanded E2E suite: `keyboard-playthrough.spec.ts` (a full keyboard-only run: toggle, arrow
+    navigation, undo, hint, check, win, Escape-dismiss), `error-states.spec.ts` (generate
+    unreachable, generate 422/timeout, check-solution unreachable — via `page.route()`
+    interception, no real backend outage needed), `difficulty-and-size.spec.ts` (all 4 difficulty
+    levels + a large-grid performance sanity check)
+  - The large-grid test led to measuring the real backend directly: 15×15 ≈ 11.5s, 20×20 ≈ 45s,
+    25×25 didn't finish in 2 minutes. A genuine backend performance problem (already flagged as a
+    future risk in the backend's own PROGRESS.md) — capped the size slider's max from the
+    design's 50 down to 20 so the UI can't trigger a multi-minute request; backend generator
+    performance at scale remains a separate, not-yet-addressed follow-up
+  - 80 unit/component tests unchanged in count but several now exercise new ARIA output; E2E
+    suite grew from 2 to 14 specs (all passing in CI, chromium only — no new browser binaries)
+  - Manually verified keyboard operability and the axe scan results against a real backend
 
 ### Future stages ⏳
-- [ ] Stage 6 — Accessibility & E2E Coverage
 - [ ] Stage 7 — Documentation & Polish
 
 ### Decisions made along the way
@@ -339,6 +362,48 @@
   outright ("not allowed in NODE_OPTIONS") rather than ignoring it. Node 22+ has the flag.
   Applied to both CI jobs for consistency, though only `test` (vitest) actually needs it — `e2e`
   (Playwright) never hit this since it doesn't run through the same `npm run test` script.
+- **Two button colors darkened slightly** (`--ng-btn-danger` #c75252→#c34f4f,
+  `--ng-btn-accent` #d17169→#af5a52) **to clear WCAG AA 4.5:1 contrast** — axe found both were
+  real failures (4.41:1 and 3.24:1 against their white/near-white text). Project owner chose this
+  over changing the text color or accepting the gap; both are still clearly the same hue as the
+  design's originals, just a few percent darker. `.cancelEditButton`'s text was also switched
+  from `--ng-ink-muted` to the darker `--ng-ink` for the same reason (4.46:1, a hair under 4.5)
+  — a component-local override rather than changing the shared `--ng-ink-muted` token, since that
+  token is used broadly elsewhere where it isn't failing.
+- **Fixed a real, previously-unnoticed rendering bug axe caught**: a row/column with *no* filled
+  cells at all serializes from the backend as `Clue([])` → `[]`, not `[0]`. `ClueList` was mapping
+  over the raw `clue` prop directly, so a genuinely-empty line rendered *zero* clue numbers
+  (a blank strip) instead of "0" — silently wrong ever since Stage 2, never caught because no
+  test exercised an actually-empty backend clue (only explicit `[0]` fixtures). Fixed by
+  extracting `normalizeClue` (already inline in `isClueSatisfied`) into `lineRuns.ts` and using it
+  for display too, not just satisfaction comparison.
+- **Landmark regions added** (`<header>` around the title, `PuzzleSetupForm`'s root promoted from
+  `<div>` to `<aside>`, distinct `aria-label`s on both sidebars + both `<main>`s) — axe's `region`
+  rule flagged the title and the setup form as content outside any landmark. `PlayArea`'s action
+  sidebar was already an `<aside>`, which is why it wasn't flagged.
+- **Removed `aria-hidden` from `ClueList`'s number `<span>`s.** They were hidden on the theory that
+  the parent's `aria-label` already conveys the same info and double-hearing both would be
+  redundant — axe's `has-visible-text` rule flags exactly this pattern (a labelled element whose
+  only visible content is hidden from the accessibility tree) as a best-practice violation. Kept
+  the parent `aria-label` (still the primary accessible name AT users get) and simply stopped
+  hiding the underlying text nodes rather than restructuring further.
+- **`GameScreen`'s initial-generate effect deliberately has no "run once" ref guard, even though
+  StrictMode visibly double-fires it in dev** (two `POST /puzzles/generate` calls on every fresh
+  load). This looks like an obvious bug and isn't: adding a guard that skips the *second*
+  StrictMode invocation's `.mutate()` call was tried and made it *worse* — TanStack Query's own
+  `useMutation` observer effect is independently double-invoked by StrictMode, and the *first*
+  invocation's observer gets torn down as part of that simulation. A guard that only allows the
+  first invocation's `.mutate()` call binds the `onSuccess` callback to the observer instance that
+  gets discarded, so the callback silently never fires even though the network request itself
+  completes successfully — the board never renders. Letting both invocations call `.mutate()`
+  normally is the actually-correct pattern: the *second* invocation's observer survives, so its
+  callback fires correctly. The extra request is dev-only (StrictMode's double-invoke never
+  happens in production) and harmless. Found by hand — none of the unit/component tests exercise
+  this because they don't run against React's real StrictMode + a real network round-trip the way
+  the E2E suite does.
+- **Puzzle size capped at 20 (design's slider went to 50)** — see the Stage 6 summary above for
+  the measured backend timings that motivated this. A visual deviation from the imported design,
+  approved by the project owner rather than guessed at (per the skill's own rule on this).
 
 ### Design import (Stage 0 step 4) — completed 2026-07-19
 

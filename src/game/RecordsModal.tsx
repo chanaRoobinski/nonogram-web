@@ -1,4 +1,5 @@
 import { formatBestTimesList, loadBestTimes, loadHistory } from './records'
+import { useModalA11y } from './useModalA11y'
 import styles from './RecordsModal.module.css'
 
 interface RecordsModalProps {
@@ -8,6 +9,7 @@ interface RecordsModalProps {
 export function RecordsModal({ onClose }: RecordsModalProps) {
   const bestTimes = formatBestTimesList(loadBestTimes())
   const history = loadHistory()
+  const containerRef = useModalA11y<HTMLDivElement>(onClose)
 
   return (
     <div
@@ -16,11 +18,13 @@ export function RecordsModal({ onClose }: RecordsModalProps) {
       role="presentation"
     >
       <div
+        ref={containerRef}
         className={styles.card}
         onClick={(event) => event.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-label="שיאים והיסטוריה"
+        tabIndex={-1}
       >
         <div className={styles.header}>
           <h2>שיאים והיסטוריה</h2>
