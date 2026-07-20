@@ -34,9 +34,11 @@
   --ng-btn-primary-hover: oklch(0.35 0.03 50);
   --ng-btn-neutral: oklch(0.35 0.03 50);
   --ng-btn-neutral-hover: oklch(0.28 0.03 50);
-  --ng-btn-danger: #c75252;
+  /* #c75252/#d17169 were the design's literal colors; darkened slightly (still the same hue —
+     see PROGRESS.md) so white/near-white button text clears WCAG AA 4.5:1 contrast. */
+  --ng-btn-danger: #c34f4f;
   --ng-btn-danger-hover: oklch(0.48 0.17 30);
-  --ng-btn-accent: #d17169;
+  --ng-btn-accent: #af5a52;
   --ng-btn-accent-hover: oklch(0.52 0.17 45);
   --ng-btn-success: oklch(0.5 0.14 145);
   --ng-btn-success-hover: oklch(0.44 0.15 145);

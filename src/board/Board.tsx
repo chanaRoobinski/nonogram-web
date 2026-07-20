@@ -87,9 +87,20 @@ export function Board({
   }
 
   return (
-    <div className={styles.card} onTouchMove={handleTouchMove}>
-      <div className={styles.headerRow}>
-        <div style={{ width: rowStripSize, height: colStripSize }} />
+    <div
+      className={styles.card}
+      onTouchMove={handleTouchMove}
+      role="grid"
+      aria-label={`לוח נונוגרמה, ${numRows} על ${numCols}`}
+      aria-rowcount={numRows + 1}
+      aria-colcount={numCols + 1}
+    >
+      <div className={styles.headerRow} role="row" aria-rowindex={1}>
+        <div
+          style={{ width: rowStripSize, height: colStripSize }}
+          role="columnheader"
+          aria-hidden="true"
+        />
         {colClues.map((clue, c) => (
           <ClueList
             key={c}
@@ -98,18 +109,25 @@ export function Board({
             cellSize={cellSize}
             stripSize={colStripSize}
             satisfied={colSatisfied[c]}
+            ariaColIndex={c + 2}
           />
         ))}
       </div>
 
       {rowClues.map((clue, r) => (
-        <div key={r} className={styles.row}>
+        <div
+          key={r}
+          className={styles.row}
+          role="row"
+          aria-rowindex={r + 2}
+        >
           <ClueList
             clue={clue}
             orientation="row"
             cellSize={cellSize}
             stripSize={rowStripSize}
             satisfied={rowSatisfied[r]}
+            ariaColIndex={1}
           />
           {grid[r]?.map((cellState, c) => (
             <Cell

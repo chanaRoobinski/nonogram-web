@@ -51,6 +51,13 @@ export function GameScreen() {
 
   // Restore a saved game if one exists; otherwise auto-generate a default puzzle — the imported
   // design never shows an "no puzzle yet" state, it always has one to play.
+  //
+  // No mount-guard ref here: React Query's mutation observer has its own effect that StrictMode
+  // also double-invokes, and a guard that skips the *second* invocation's `.mutate()` call
+  // orphans the callback on the observer instance StrictMode tears down first — `onSuccess`
+  // then silently never fires, even though the network request itself completes. Letting both
+  // invocations call `.mutate()` (an extra dev-only request, no-op in production where
+  // StrictMode's double-invoke doesn't happen) is the actually-correct pattern here.
   useEffect(() => {
     const saved = loadSavedGame()
     if (saved) {
@@ -149,7 +156,9 @@ export function GameScreen() {
 
   return (
     <div className={styles.root}>
-      <h1 className={styles.title}>שחור ופתור</h1>
+      <header>
+        <h1 className={styles.title}>שחור ופתור</h1>
+      </header>
       <div className={styles.layout}>
         {editMode || !puzzle ? (
           <div className={styles.sidebarPlaceholder} />
@@ -170,7 +179,7 @@ export function GameScreen() {
         )}
 
         {editMode && editClues && (
-          <main className={styles.main}>
+          <main className={styles.main} aria-label="עריכת פתרון">
             <Board
               rowClues={editClues.rowClues}
               colClues={editClues.colClues}

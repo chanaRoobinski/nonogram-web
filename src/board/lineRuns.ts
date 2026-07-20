@@ -21,6 +21,12 @@ export function runsOfLine(cells: readonly CellState[]): number[] {
   return runs.length > 0 ? runs : [0]
 }
 
+/** The backend serializes an empty clue as `[]` (`Clue([])`); normalized to the same `[0]`
+ * `runsOfLine` uses for an all-empty line, so both display and comparison treat them alike. */
+export function normalizeClue(clue: readonly number[]): number[] {
+  return clue.length > 0 ? [...clue] : [0]
+}
+
 /**
  * Compares a line's actual fill pattern against its clue. The backend serializes an empty
  * clue as [] (Clue([])), while an all-empty line's runsOfLine is [0] — both normalized to [0]
@@ -30,7 +36,7 @@ export function isClueSatisfied(
   actualRuns: number[],
   clue: readonly number[],
 ): boolean {
-  const normalizedClue = clue.length > 0 ? clue : [0]
+  const normalizedClue = normalizeClue(clue)
   if (actualRuns.length !== normalizedClue.length) return false
   return actualRuns.every((run, i) => run === normalizedClue[i])
 }
