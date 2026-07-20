@@ -1,8 +1,8 @@
 # Progress Tracker — Nonogram Web Client
 
-## Current stage: Stage 6 — Accessibility & E2E Coverage
-## Status: Complete
-## Active branch: feature/stage-6-accessibility-e2e (pending PR merge)
+## Current stage: Stage 7 — Documentation & Polish
+## Status: All stages complete, MVP ready
+## Active branch: main
 ## Last updated: 2026-07-20
 
 ### Completed stages ✅
@@ -142,9 +142,20 @@
   - 80 unit/component tests unchanged in count but several now exercise new ARIA output; E2E
     suite grew from 2 to 14 specs (all passing in CI, chromium only — no new browser binaries)
   - Manually verified keyboard operability and the axe scan results against a real backend
+- [x] Stage 7 — Documentation & Polish
+  - Full `README.md`: prerequisites, getting started against a local backend, `.env.local`
+    override + the recurring "delete it before running tests" pitfall, a scripts table, both ways
+    to regenerate API types (checked-in snapshot vs. live backend), and a testing section
+    explaining the unit/component-vs-E2E split and what CI runs
+  - `docs/architecture.md`: how `api/` / `board/` / `game/` relate — `api/` is a dumb typed
+    transport layer, `board/` is a self-contained backend-agnostic puzzle-grid UI (reusable in
+    principle by a different game shell), `game/` layers this app's actual rules (on-demand
+    checking, solution sourcing, persistence, records) on top rather than mixing them into the
+    board component itself
+  - No code changes this stage — documentation only, per the skill's own Stage 7 scope
 
 ### Future stages ⏳
-- [ ] Stage 7 — Documentation & Polish
+- (none — all 8 stages complete)
 
 ### Decisions made along the way
 
